@@ -85,3 +85,8 @@ function redirect($url, $delay = 0, $msg = '') {
 function is_ajax() {
 	return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 }
+
+function sys_conf($k) {
+    global $SYS_CONF;
+    return isset($SYS_CONF[$k]) ? $SYS_CONF[$k] : null;
+}

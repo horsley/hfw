@@ -24,6 +24,9 @@ define('TPL_ROOT', HFW_ROOT.'/tpl');
 define('ACTION_ROOT', HFW_ROOT.'/action');
 define('TPL_EXT', '.php');
 define('ACTION_EXT', '_action.class.php');
+
+
+define('DEFAULT_ACTION', 'index');
 define('DEFAULT_METHOD', 'index');
 
 //functions
@@ -46,17 +49,36 @@ class HFW {
 	}
 
 	public static function dispatch() {
-		$url = array_filter(explode('/', $_SERVER['PATH_INFO']));
+        $pathinfo = empty($_SERVER['PATH_INFO']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PATH_INFO'];
+		$url = array_filter(explode('/', $pathinfo));
 		$action_file = array_shift($url) . ACTION_EXT;
-		require_once ACTION_ROOT .'/'. $action_file;
+        if (file_exists(ACTION_ROOT .'/'. $action_file)) {
+            require_once ACTION_ROOT .'/'. $action_file;
+        } elseif (($action_file = DEFAULT_ACTION) != ''
+            && file_exists(ACTION_ROOT .'/'. $action_file.ACTION_EXT)) {
+            $action_file = $action_file.ACTION_EXT;
+            require_once ACTION_ROOT .'/'.$action_file;
+        } else {
+            var_dump($action_file);
+            die('500 action not found');
+        }
+
 
 		$action = ucfirst(array_shift(explode('.', $action_file)));
 		$method = array_shift($url);
 		$method = empty($method) ? DEFAULT_METHOD : $method;
 
 		$instance = new $action();
-		$handler = array($instance, $method);
-		if (is_callable($handler)) call_user_func_array($handler, $url);
+        $handler = array($instance, $method);
+        if (method_exists($instance, $method) && is_callable($handler)) {
+            call_user_func_array($handler, $url);
+        } elseif (($method = DEFAULT_METHOD) != ''
+            && method_exists($instance, $method)) {
+            $handler = array($instance, $method);
+            call_user_func_array($handler, $url);
+        } else {
+            die('500 method not found');
+        }
 	}
 }
 
